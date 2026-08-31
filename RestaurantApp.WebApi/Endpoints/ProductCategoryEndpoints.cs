@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using RestaurantApp.WebApi.Data;
 using RestaurantApp.WebApi.Data.Entities;
+using RestaurantApp.WebApi.DTOs.ProductCategories;
 
 namespace RestaurantApp.WebApi.Endpoints;
 
@@ -107,7 +108,3 @@ public static class ProductCategoryEndpoints
         return TypedResults.NoContent();
     }
 }
-
-// DTOs for request bodies
-public record CreateProductCategoryRequest(string Name);
-public record UpdateProductCategoryRequest(string Name);

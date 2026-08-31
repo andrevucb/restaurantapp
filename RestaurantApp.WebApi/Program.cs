@@ -10,6 +10,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
 builder.Services.AddOpenApi();
+builder.Services.AddValidation();
 
 var app = builder.Build();
 
