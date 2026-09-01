@@ -1,4 +1,3 @@
-import './App.css'
 import { Route, Routes } from 'react-router'
 import Dashboard from './pages/dashboard/dashboard'
 import ProductCategories from './pages/dashboard/product-categories'
