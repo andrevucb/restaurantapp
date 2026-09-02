@@ -104,6 +104,15 @@ public static class ProductCategoryEndpoints
         AppDbContext db)
     {
         var category = new ProductCategory { Name = request.Name };
+
+        foreach (var price in request.Prices)
+        {
+            category.Prices.Add(new ProductPrice
+            {
+                ProductSizeId = price.ProductSizeId,
+                Price = price.Price
+            });
+        }
         
         db.ProductCategories.Add(category);
         await db.SaveChangesAsync();
@@ -119,12 +128,26 @@ public static class ProductCategoryEndpoints
         if (string.IsNullOrWhiteSpace(request.Name))
             return TypedResults.BadRequest();
 
-        var category = await db.ProductCategories.FirstOrDefaultAsync(c => c.Id == id);
+        var category = await db.ProductCategories
+            .Include(c => c.Prices)
+            .FirstOrDefaultAsync(c => c.Id == id);
         
         if (category is null)
             return TypedResults.NotFound();
 
         category.Name = request.Name;
+
+        db.ProductPrices.RemoveRange(category.Prices);
+
+        foreach (var price in request.Prices)
+        {
+            category.Prices.Add(new ProductPrice
+            {
+                ProductSizeId = price.ProductSizeId,
+                Price = price.Price
+            });
+        }        
+
         await db.SaveChangesAsync();
 
         return TypedResults.Ok(category);
