@@ -8,4 +8,6 @@ public class ProductCategory
 
     [MaxLength(150)]
     public required string Name { get; set; }
+
+    public ICollection<ProductPrice> Prices { get; set; } = [];
 }
