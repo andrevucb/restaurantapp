@@ -7,6 +7,7 @@ public static class EndpointExtensions
         app.MapAuthEndpoints();
         app.MapProductCategoryEndpoints();
         app.MapProductSizeEndpoints();
+        app.MapProductEndpoints();
         
         return app;
     }
