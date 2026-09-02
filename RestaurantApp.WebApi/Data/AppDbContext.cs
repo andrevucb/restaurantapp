@@ -5,6 +5,7 @@ namespace RestaurantApp.WebApi.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
+    public DbSet<Product> Products { get; set; }
     public DbSet<ProductCategory> ProductCategories { get; set; }
     public DbSet<ProductPrice> ProductPrices { get; set; }
     public DbSet<ProductSize> ProductSizes { get; set; }
