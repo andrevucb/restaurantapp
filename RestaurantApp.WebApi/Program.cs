@@ -45,6 +45,7 @@ builder.Services
             IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwt.Key))
         };
     });
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -56,7 +57,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
-
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapApiEndpoints();
 
 app.Run();
