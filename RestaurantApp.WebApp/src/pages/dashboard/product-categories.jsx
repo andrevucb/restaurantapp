@@ -65,6 +65,29 @@ function ProductCategories() {
     handleCloseEditor();
   }
 
+  async function handleDeleteCategory(e, categoryId) {
+    e.preventDefault();
+    
+    if (!window.confirm('¿Estás seguro de que deseas eliminar esta categoría?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiUrl}/product-categories/${categoryId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar la categoría');
+      }
+
+      fetchCategories();
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      alert('Error al eliminar la categoría');
+    }
+  }
+
   useEffect(() => {
     fetchCategories();
     fetchProductSizes();
@@ -97,7 +120,7 @@ function ProductCategories() {
               <td>{getProductPriceSummary(category)}</td>
               <td className="dashboard-section__actions">
                 <button className="dashboard-section__edit" onClick={(e) => handleOpenEditEditor(e, category)}>Editar</button>
-                <button className="dashboard-section__delete">Borrar</button>
+                <button className="dashboard-section__delete" onClick={(e) => handleDeleteCategory(e, category.id)}>Borrar</button>
               </td>
             </tr>
           ))}
