@@ -141,11 +141,12 @@ function ProductCategoryEditor({ isNew, category, productSizes, apiUrl, onClose,
                     type="number"
                     id={`price-${price.productSizeId}`}
                     name={`price-${price.productSizeId}`}
-                    min="1"
+                    min="0.01"
                     step="0.01"
                     required
                     value={price.price}
                     onChange={(e) => handlePriceChange(price.productSizeId, e.target.value)}
+                    onFocus={(e) => e.target.select()}
                   />
                 </div>
               </div>
