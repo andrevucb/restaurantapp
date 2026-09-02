@@ -5,6 +5,8 @@ function ProductCategories() {
   const [categories, setCategories] = useState([]);
   const [productSizes, setProductSizes] = useState([]);
   const [showEditor, setShowEditor] = useState(false);
+  const [isNewCategory, setIsNewCategory] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
 
   const apiUrl = 'http://localhost:5148/api'
 
@@ -29,16 +31,38 @@ function ProductCategories() {
   }
 
   function getProductPriceSummary(category) {
+    if (!category.prices || category.prices.length === 0) {
+      return "Sin precios configurados";
+    }
 
+    return category.prices
+      .map(price => `Bs. ${price.price.toFixed(2).replace('.', ',')} (${price.size} ${price.unit})`)
+      .join(", ");
   }
 
-  function handleOpenEditor(e) {
+  function handleOpenNewEditor(e) {
     e.preventDefault();
+    setIsNewCategory(true);
+    setEditingCategory(null);
+    setShowEditor(true);
+  }
+
+  function handleOpenEditEditor(e, category) {
+    e.preventDefault();
+    setIsNewCategory(false);
+    setEditingCategory(category);
     setShowEditor(true);
   }
 
   function handleCloseEditor() {
     setShowEditor(false);
+    setIsNewCategory(false);
+    setEditingCategory(null);
+  }
+
+  function handleSaveCategory() {
+    fetchCategories();
+    handleCloseEditor();
   }
 
   useEffect(() => {
@@ -50,7 +74,7 @@ function ProductCategories() {
     <section className="dashboard-section">
       <h1 className="dashboard-section__title">Categorias</h1>
 
-      <button className="dashboard-section__add" onClick={handleOpenEditor}>+ Nueva Categoria</button>
+      <button className="dashboard-section__add" onClick={handleOpenNewEditor}>+ Nueva Categoria</button>
 
       <table className="dashboard-section__table">
         <colgroup>
@@ -72,7 +96,7 @@ function ProductCategories() {
               <td>{category.name}</td>
               <td>{getProductPriceSummary(category)}</td>
               <td className="dashboard-section__actions">
-                <button className="dashboard-section__edit" onClick={handleOpenEditor}>Editar</button>
+                <button className="dashboard-section__edit" onClick={(e) => handleOpenEditEditor(e, category)}>Editar</button>
                 <button className="dashboard-section__delete">Borrar</button>
               </td>
             </tr>
@@ -80,7 +104,16 @@ function ProductCategories() {
         </tbody>
       </table>
 
-      {showEditor && <ProductCategoryEditor onClose={handleCloseEditor} />}
+      {showEditor && (
+        <ProductCategoryEditor
+          isNew={isNewCategory}
+          category={editingCategory}
+          productSizes={productSizes}
+          apiUrl={apiUrl}
+          onClose={handleCloseEditor}
+          onSave={handleSaveCategory}
+        />
+      )}
     </section>
   )
 }

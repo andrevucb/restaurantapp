@@ -28,14 +28,14 @@ public static class ProductCategoryEndpoints
             .WithName("CreateProductCategory")
             .WithDescription("Create a new product category")
             .Accepts<CreateProductCategoryRequest>("application/json")
-            .Produces<ProductCategory>(StatusCodes.Status201Created)
+            .Produces<ProductCategoryResponse>(StatusCodes.Status201Created)
             .Produces(StatusCodes.Status400BadRequest);
 
         group.MapPut("/{id}", UpdateProductCategory)
             .WithName("UpdateProductCategory")
             .WithDescription("Update an existing product category")
             .Accepts<UpdateProductCategoryRequest>("application/json")
-            .Produces<ProductCategory>(StatusCodes.Status200OK)
+            .Produces<ProductCategoryResponse>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status404NotFound);
 
@@ -99,7 +99,7 @@ public static class ProductCategoryEndpoints
         return TypedResults.Ok(categoryResponse);
     }
 
-    private static async Task<Created<ProductCategory>> CreateProductCategory(
+    private static async Task<Created<ProductCategoryResponse>> CreateProductCategory(
         CreateProductCategoryRequest request, 
         AppDbContext db)
     {
@@ -117,10 +117,29 @@ public static class ProductCategoryEndpoints
         db.ProductCategories.Add(category);
         await db.SaveChangesAsync();
 
-        return TypedResults.Created($"/api/product-categories/{category.Id}", category);
+        // Reload to get the ProductSize data
+        category = await db.ProductCategories
+            .Include(c => c.Prices)
+            .ThenInclude(p => p.ProductSize)
+            .FirstAsync(c => c.Id == category.Id);
+
+        var categoryResponse = new ProductCategoryResponse
+        {
+            Id = category.Id,
+            Name = category.Name,
+            Prices = [.. category.Prices.Select(p => new ProductCategoryPriceResponse
+            {
+                ProductSizeId = p.ProductSizeId,
+                Size = p.ProductSize.Size,
+                Unit = p.ProductSize.Unit,
+                Price = p.Price
+            })]
+        };
+
+        return TypedResults.Created($"/api/product-categories/{category.Id}", categoryResponse);
     }
 
-    private static async Task<Results<Ok<ProductCategory>, NotFound, BadRequest>> UpdateProductCategory(
+    private static async Task<Results<Ok<ProductCategoryResponse>, NotFound, BadRequest>> UpdateProductCategory(
         int id, 
         UpdateProductCategoryRequest request, 
         AppDbContext db)
@@ -150,7 +169,26 @@ public static class ProductCategoryEndpoints
 
         await db.SaveChangesAsync();
 
-        return TypedResults.Ok(category);
+        // Reload to get the ProductSize data
+        category = await db.ProductCategories
+            .Include(c => c.Prices)
+            .ThenInclude(p => p.ProductSize)
+            .FirstAsync(c => c.Id == id);
+
+        var categoryResponse = new ProductCategoryResponse
+        {
+            Id = category.Id,
+            Name = category.Name,
+            Prices = [.. category.Prices.Select(p => new ProductCategoryPriceResponse
+            {
+                ProductSizeId = p.ProductSizeId,
+                Size = p.ProductSize.Size,
+                Unit = p.ProductSize.Unit,
+                Price = p.Price
+            })]
+        };
+
+        return TypedResults.Ok(categoryResponse);
     }
 
     private static async Task<Results<NoContent, NotFound>> DeleteProductCategory(int id, AppDbContext db)
