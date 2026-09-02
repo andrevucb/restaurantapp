@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import ProductCategoryEditor from "../../components/ProductCategoryEditor";
 
 function ProductCategories() {
   const [categories, setCategories] = useState([]);
   const [productSizes, setProductSizes] = useState([]);
+  const [showEditor, setShowEditor] = useState(false);
 
   const apiUrl = 'http://localhost:5148/api'
 
@@ -30,6 +32,15 @@ function ProductCategories() {
 
   }
 
+  function handleOpenEditor(e) {
+    e.preventDefault();
+    setShowEditor(true);
+  }
+
+  function handleCloseEditor() {
+    setShowEditor(false);
+  }
+
   useEffect(() => {
     fetchCategories();
     fetchProductSizes();
@@ -39,7 +50,7 @@ function ProductCategories() {
     <section className="dashboard-section">
       <h1 className="dashboard-section__title">Categorias</h1>
 
-      <button className="dashboard-section__add">+ Nueva Categoria</button>
+      <button className="dashboard-section__add" onClick={handleOpenEditor}>+ Nueva Categoria</button>
 
       <table className="dashboard-section__table">
         <colgroup>
@@ -61,13 +72,15 @@ function ProductCategories() {
               <td>{category.name}</td>
               <td>{getProductPriceSummary(category)}</td>
               <td className="dashboard-section__actions">
-                <button className="dashboard-section__edit">Editar</button>
+                <button className="dashboard-section__edit" onClick={handleOpenEditor}>Editar</button>
                 <button className="dashboard-section__delete">Borrar</button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+
+      {showEditor && <ProductCategoryEditor onClose={handleCloseEditor} />}
     </section>
   )
 }

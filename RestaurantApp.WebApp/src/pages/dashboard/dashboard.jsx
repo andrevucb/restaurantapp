@@ -10,7 +10,7 @@ function Dashboard() {
       </nav>
     </header>
     <main className="dashboard-container">
-      <nav class="dashboard-nav">
+      <nav className="dashboard-nav">
         <NavLink 
           to="/dashboard" 
           className={({ isActive }) =>
