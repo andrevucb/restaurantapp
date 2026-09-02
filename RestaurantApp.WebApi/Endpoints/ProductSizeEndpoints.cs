@@ -10,7 +10,8 @@ public static class ProductSizeEndpoints
     public static IEndpointRouteBuilder MapProductSizeEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/product-sizes")
-                       .WithTags("Product Sizes");
+                       .WithTags("Product Sizes")
+                       .RequireAuthorization();
 
         group.MapGet("/", GetAllProductSizes)
             .WithName("GetAllProductSizes")

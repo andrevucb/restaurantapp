@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 
-function ProductCategoryEditor({ isNew, category, productSizes, apiUrl, onClose, onSave }) {
+function ProductCategoryEditor({ isNew, category, productSizes, apiUrl, authFetch, onClose, onSave }) {
   const dialogRef = useRef(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -16,22 +16,22 @@ function ProductCategoryEditor({ isNew, category, productSizes, apiUrl, onClose,
     // Initialize form data
     if (isNew) {
       // For new categories, initialize prices with all product sizes
-      setFormData({
+      queueMicrotask(() => setFormData({
         name: "",
         prices: productSizes.map(size => ({
           productSizeId: size.id,
           price: 1
         }))
-      });
+      }));
     } else if (category) {
       // For editing, populate with existing category data
-      setFormData({
+      queueMicrotask(() => setFormData({
         name: category.name,
         prices: category.prices.map(p => ({
           productSizeId: p.productSizeId,
           price: p.price
         }))
-      });
+      }));
     }
   }, [isNew, category, productSizes]);
 
@@ -61,7 +61,7 @@ function ProductCategoryEditor({ isNew, category, productSizes, apiUrl, onClose,
       const endpoint = isNew ? `${apiUrl}/product-categories` : `${apiUrl}/product-categories/${category.id}`;
       const method = isNew ? "POST" : "PUT";
 
-      const response = await fetch(endpoint, {
+      const response = await authFetch(endpoint, {
         method,
         headers: {
           "Content-Type": "application/json"

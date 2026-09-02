@@ -11,7 +11,8 @@ public static class ProductCategoryEndpoints
     public static IEndpointRouteBuilder MapProductCategoryEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/product-categories")
-                       .WithTags("Product Categories");
+                       .WithTags("Product Categories")
+                       .RequireAuthorization();
 
         group.MapGet("/", GetAllProductCategories)
             .WithName("GetAllProductCategories")
