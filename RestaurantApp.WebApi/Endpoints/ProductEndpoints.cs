@@ -9,6 +9,8 @@ namespace RestaurantApp.WebApi.Endpoints;
 
 public static class ProductEndpoints
 {
+    private const long MaxImageSize = 5 * 1024 * 1024;
+
     public static IEndpointRouteBuilder MapProductEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/products")
@@ -26,20 +28,20 @@ public static class ProductEndpoints
              .Produces<ProductResponse>(StatusCodes.Status200OK)
              .Produces(StatusCodes.Status404NotFound);
 
-           group.MapPost("/", CreateProduct)
-               .WithName("CreateProduct")
-               .WithDescription("Create a product")
-               .Accepts<Product>("multipart/form-data")
-               .Produces<ProductResponse>(StatusCodes.Status201Created)
-               .Produces(StatusCodes.Status400BadRequest);
+        group.MapPost("/", CreateProduct)
+             .WithName("CreateProduct")
+             .WithDescription("Create a product")
+             .Accepts<Product>("multipart/form-data")
+             .Produces<ProductResponse>(StatusCodes.Status201Created)
+             .Produces(StatusCodes.Status400BadRequest);
 
-           group.MapPut("/{id}", UpdateProduct)
-               .WithName("UpdateProduct")
-               .WithDescription("Update a product")
-               .Accepts<Product>("multipart/form-data")
-               .Produces<ProductResponse>(StatusCodes.Status200OK)
-               .Produces(StatusCodes.Status400BadRequest)
-               .Produces(StatusCodes.Status404NotFound);
+        group.MapPut("/{id}", UpdateProduct)
+             .WithName("UpdateProduct")
+             .WithDescription("Update a product")
+             .Accepts<Product>("multipart/form-data")
+             .Produces<ProductResponse>(StatusCodes.Status200OK)
+             .Produces(StatusCodes.Status400BadRequest)
+             .Produces(StatusCodes.Status404NotFound);
 
         group.MapDelete("/{id}", DeleteProduct)
              .WithName("DeleteProduct")
@@ -95,6 +97,8 @@ public static class ProductEndpoints
 
     private static async Task<Results<Created<ProductResponse>, BadRequest>> CreateProduct(
         [FromForm] Product product,
+        [FromForm] IFormFile? image,
+        IConfiguration configuration,
         AppDbContext db)
     {
         if (!await db.ProductCategories.AnyAsync(category => category.Id == product.CategoryId))
@@ -102,6 +106,12 @@ public static class ProductEndpoints
             return TypedResults.BadRequest();
         }
 
+        if (!IsValidImage(image))
+        {
+            return TypedResults.BadRequest();
+        }
+
+        product.Image = await SaveImage(image, configuration);
         db.Products.Add(product);
         await db.SaveChangesAsync();
 
@@ -122,6 +132,8 @@ public static class ProductEndpoints
     private static async Task<Results<Ok<ProductResponse>, NotFound, BadRequest>> UpdateProduct(
         int id,
         [FromForm] Product product,
+        [FromForm] IFormFile? image,
+        IConfiguration configuration,
         AppDbContext db)
     {
         var productEntity = await db.Products.FindAsync(id);
@@ -136,10 +148,21 @@ public static class ProductEndpoints
             return TypedResults.BadRequest();
         }
 
+        if (!IsValidImage(image))
+        {
+            return TypedResults.BadRequest();
+        }
+
         productEntity.Name = product.Name;
         productEntity.Description = product.Description;
-        productEntity.Image = product.Image;
         productEntity.CategoryId = product.CategoryId;
+
+        if (image is not null)
+        {
+            var previousImage = productEntity.Image;
+            productEntity.Image = await SaveImage(image, configuration);
+            DeleteImage(previousImage, configuration);
+        }
 
         await db.SaveChangesAsync();
         await db.Entry(productEntity).Reference(p => p.Category).LoadAsync();
@@ -156,7 +179,59 @@ public static class ProductEndpoints
         return TypedResults.Ok(productResponse);
     }
 
-    private static async Task<Results<NoContent, NotFound>> DeleteProduct(int id, AppDbContext db)
+    private static async Task<string?> SaveImage(IFormFile? image, IConfiguration configuration)
+    {
+        if (image is null || image.Length == 0)
+        {
+            return null;
+        }
+
+        var uploadPath = GetUploadPath(configuration);
+        Directory.CreateDirectory(uploadPath);
+
+        var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
+        var fileName = $"{Guid.NewGuid():N}{extension}";
+        var filePath = Path.Combine(uploadPath, fileName);
+
+        await using var stream = File.Create(filePath);
+        await image.CopyToAsync(stream);
+
+        return $"/uploads/{fileName}";
+    }
+
+    private static bool IsValidImage(IFormFile? image)
+    {
+        return image is null ||
+            (image.Length > 0 && image.Length <= MaxImageSize &&
+             image.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static void DeleteImage(string? imagePath, IConfiguration configuration)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+        {
+            return;
+        }
+
+        var fileName = Path.GetFileName(imagePath);
+        var filePath = Path.Combine(GetUploadPath(configuration), fileName);
+
+        if (File.Exists(filePath))
+        {
+            File.Delete(filePath);
+        }
+    }
+
+    private static string GetUploadPath(IConfiguration configuration)
+    {
+        var configuredPath = configuration["FileStorage:UploadPath"] ?? "wwwroot/uploads";
+        return Path.GetFullPath(configuredPath);
+    }
+
+    private static async Task<Results<NoContent, NotFound>> DeleteProduct(
+        int id,
+        IConfiguration configuration,
+        AppDbContext db)
     {
         var product = await db.Products.FindAsync(id);
 
@@ -165,6 +240,7 @@ public static class ProductEndpoints
             return TypedResults.NotFound();
         }
 
+        DeleteImage(product.Image, configuration);
         db.Products.Remove(product);
         await db.SaveChangesAsync();
 
