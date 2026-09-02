@@ -1,4 +1,40 @@
+import { useEffect, useState } from "react";
+
 function ProductCategories() {
+  const [categories, setCategories] = useState([]);
+  const [productSizes, setProductSizes] = useState([]);
+
+  const apiUrl = 'http://localhost:5148/api'
+
+  async function fetchCategories() {
+    try {
+      const response = await fetch(`${apiUrl}/product-categories`);
+      const data = await response.json();
+      setCategories(data);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  }
+
+  async function fetchProductSizes() {
+    try {
+      const response = await fetch(`${apiUrl}/product-sizes`);
+      const data = await response.json();
+      setProductSizes(data);
+    } catch (error) {
+      console.error('Error fetching product sizes:', error);
+    }
+  }
+
+  function getProductPriceSummary(category) {
+
+  }
+
+  useEffect(() => {
+    fetchCategories();
+    fetchProductSizes();
+  }, []);
+
   return (
     <section className="dashboard-section">
       <h1 className="dashboard-section__title">Categorias</h1>
@@ -19,22 +55,17 @@ function ProductCategories() {
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>Experiencia inolvidable</td>
-            <td>Bs. 32,00 (4 porciones), Bs. 55,00 (6 porciones), Bs. 65,00 (8 porciones), Bs. 80,00 (10 porciones)</td>
-            <td className="dashboard-section__actions">
-              <button className="dashboard-section__edit">Editar</button>
-              <button className="dashboard-section__delete">Borrar</button>
-            </td>
-          </tr>
-          <tr>
-            <td>Sabores que inspiran</td>
-            <td>Bs. 30,00 (4 porciones), Bs. 50,00 (6 porciones), Bs. 60,00 (8 porciones), Bs. 75,00 (10 porciones)</td>
-            <td className="dashboard-section__actions">
-              <button className="dashboard-section__edit">Editar</button>
-              <button className="dashboard-section__delete">Borrar</button>
-            </td>
-          </tr>
+          {!categories.length && <tr><td colSpan="3">No hay categorías disponibles.</td></tr>}
+          {categories.map(category => (
+            <tr key={category.id}>
+              <td>{category.name}</td>
+              <td>{getProductPriceSummary(category)}</td>
+              <td className="dashboard-section__actions">
+                <button className="dashboard-section__edit">Editar</button>
+                <button className="dashboard-section__delete">Borrar</button>
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </section>
