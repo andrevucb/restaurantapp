@@ -16,26 +16,26 @@ public static class ProductCategoryEndpoints
         group.MapGet("/", GetAllProductCategories)
             .WithName("GetAllProductCategories")
             .WithDescription("Get all product categories")
-            .Produces<List<ProductCategory>>(StatusCodes.Status200OK);
+            .Produces<IEnumerable<ProductCategoryResponse>>(StatusCodes.Status200OK);
 
         group.MapGet("/{id}", GetProductCategoryById)
             .WithName("GetProductCategoryById")
             .WithDescription("Get a product category by id")
-            .Produces<ProductCategory>(StatusCodes.Status200OK)
+            .Produces<ProductCategoryResponse>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound);
 
         group.MapPost("/", CreateProductCategory)
             .WithName("CreateProductCategory")
             .WithDescription("Create a new product category")
             .Accepts<CreateProductCategoryRequest>("application/json")
-            .Produces<ProductCategory>(StatusCodes.Status201Created)
+            .Produces<ProductCategoryResponse>(StatusCodes.Status201Created)
             .Produces(StatusCodes.Status400BadRequest);
 
         group.MapPut("/{id}", UpdateProductCategory)
             .WithName("UpdateProductCategory")
             .WithDescription("Update an existing product category")
             .Accepts<UpdateProductCategoryRequest>("application/json")
-            .Produces<ProductCategory>(StatusCodes.Status200OK)
+            .Produces<ProductCategoryResponse>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status404NotFound);
 
@@ -48,35 +48,98 @@ public static class ProductCategoryEndpoints
         return app;
     }
 
-    private static async Task<Ok<List<ProductCategory>>> GetAllProductCategories(AppDbContext db)
+    private static async Task<Ok<IEnumerable<ProductCategoryResponse>>> GetAllProductCategories(AppDbContext db)
     {
-        var categories = await db.ProductCategories.AsNoTracking().ToListAsync();
-        return TypedResults.Ok(categories);
+        var categories = await db.ProductCategories
+            .Include(p => p.Prices)
+            .ThenInclude(p => p.ProductSize)
+            .AsNoTracking()
+            .ToListAsync();
+        
+        var categoryResponses = categories.Select(c => new ProductCategoryResponse
+        {
+            Id = c.Id,
+            Name = c.Name,
+            Prices = [.. c.Prices.Select(p => new ProductCategoryPriceResponse
+            {
+                ProductSizeId = p.ProductSizeId,
+                Size = p.ProductSize.Size,
+                Unit = p.ProductSize.Unit,
+                Price = p.Price
+            })]
+        });
+
+        return TypedResults.Ok(categoryResponses);
     }
 
-    private static async Task<Results<Ok<ProductCategory>, NotFound>> GetProductCategoryById(int id, AppDbContext db)
+    private static async Task<Results<Ok<ProductCategoryResponse>, NotFound>> GetProductCategoryById(int id, AppDbContext db)
     {
-        var category = await db.ProductCategories.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
+        var category = await db.ProductCategories
+            .Include(p => p.Prices)
+            .ThenInclude(p => p.ProductSize)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == id);
         
         if (category is null)
             return TypedResults.NotFound();
 
-        return TypedResults.Ok(category);
+        var categoryResponse = new ProductCategoryResponse
+        {
+            Id = category.Id,
+            Name = category.Name,
+            Prices = [.. category.Prices.Select(p => new ProductCategoryPriceResponse
+            {
+                ProductSizeId = p.ProductSizeId,
+                Size = p.ProductSize.Size,
+                Unit = p.ProductSize.Unit,
+                Price = p.Price
+            })]
+        };
+
+        return TypedResults.Ok(categoryResponse);
     }
 
-    private static async Task<Created<ProductCategory>> CreateProductCategory(
+    private static async Task<Created<ProductCategoryResponse>> CreateProductCategory(
         CreateProductCategoryRequest request, 
         AppDbContext db)
     {
         var category = new ProductCategory { Name = request.Name };
+
+        foreach (var price in request.Prices)
+        {
+            category.Prices.Add(new ProductPrice
+            {
+                ProductSizeId = price.ProductSizeId,
+                Price = price.Price
+            });
+        }
         
         db.ProductCategories.Add(category);
         await db.SaveChangesAsync();
 
-        return TypedResults.Created($"/api/product-categories/{category.Id}", category);
+        // Reload to get the ProductSize data
+        category = await db.ProductCategories
+            .Include(c => c.Prices)
+            .ThenInclude(p => p.ProductSize)
+            .FirstAsync(c => c.Id == category.Id);
+
+        var categoryResponse = new ProductCategoryResponse
+        {
+            Id = category.Id,
+            Name = category.Name,
+            Prices = [.. category.Prices.Select(p => new ProductCategoryPriceResponse
+            {
+                ProductSizeId = p.ProductSizeId,
+                Size = p.ProductSize.Size,
+                Unit = p.ProductSize.Unit,
+                Price = p.Price
+            })]
+        };
+
+        return TypedResults.Created($"/api/product-categories/{category.Id}", categoryResponse);
     }
 
-    private static async Task<Results<Ok<ProductCategory>, NotFound, BadRequest>> UpdateProductCategory(
+    private static async Task<Results<Ok<ProductCategoryResponse>, NotFound, BadRequest>> UpdateProductCategory(
         int id, 
         UpdateProductCategoryRequest request, 
         AppDbContext db)
@@ -84,15 +147,48 @@ public static class ProductCategoryEndpoints
         if (string.IsNullOrWhiteSpace(request.Name))
             return TypedResults.BadRequest();
 
-        var category = await db.ProductCategories.FirstOrDefaultAsync(c => c.Id == id);
+        var category = await db.ProductCategories
+            .Include(c => c.Prices)
+            .FirstOrDefaultAsync(c => c.Id == id);
         
         if (category is null)
             return TypedResults.NotFound();
 
         category.Name = request.Name;
+
+        db.ProductPrices.RemoveRange(category.Prices);
+
+        foreach (var price in request.Prices)
+        {
+            category.Prices.Add(new ProductPrice
+            {
+                ProductSizeId = price.ProductSizeId,
+                Price = price.Price
+            });
+        }        
+
         await db.SaveChangesAsync();
 
-        return TypedResults.Ok(category);
+        // Reload to get the ProductSize data
+        category = await db.ProductCategories
+            .Include(c => c.Prices)
+            .ThenInclude(p => p.ProductSize)
+            .FirstAsync(c => c.Id == id);
+
+        var categoryResponse = new ProductCategoryResponse
+        {
+            Id = category.Id,
+            Name = category.Name,
+            Prices = [.. category.Prices.Select(p => new ProductCategoryPriceResponse
+            {
+                ProductSizeId = p.ProductSizeId,
+                Size = p.ProductSize.Size,
+                Unit = p.ProductSize.Unit,
+                Price = p.Price
+            })]
+        };
+
+        return TypedResults.Ok(categoryResponse);
     }
 
     private static async Task<Results<NoContent, NotFound>> DeleteProductCategory(int id, AppDbContext db)

@@ -9,6 +9,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options => 
     options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(builder =>
+    {
+        builder.WithOrigins("http://localhost:5173")
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
+
 builder.Services.AddOpenApi();
 builder.Services.AddValidation();
 
@@ -20,6 +30,8 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.MapScalarApiReference();
 }
+
+app.UseCors();
 
 app.MapApiEndpoints();
 
