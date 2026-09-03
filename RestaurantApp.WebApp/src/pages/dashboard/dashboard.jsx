@@ -13,6 +13,7 @@ function Dashboard() {
       <nav className="dashboard-nav">
         <NavLink 
           to="/dashboard" 
+          end
           className={({ isActive }) =>
             isActive ? "dashboard-nav__link dashboard-nav__link--active" : "dashboard-nav__link"
           }
