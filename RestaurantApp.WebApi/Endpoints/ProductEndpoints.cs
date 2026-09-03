@@ -18,6 +18,7 @@ public static class ProductEndpoints
                        .RequireAuthorization();
 
         group.MapGet("/", GetAllProducts)
+             .AllowAnonymous()
              .WithName("GetAllProducts")
              .WithDescription("Get all products")
              .Produces<IEnumerable<ProductResponse>>(StatusCodes.Status200OK);
