@@ -460,8 +460,13 @@
 }
 
 .dashboard-section__image {
-    width: 48px;
-    height: 48px;
+    width: 100px;
+    height: 75px;
+}
+
+.dashboard-section__image svg {
+    width: 100px;
+    height: 75px;
 }
 
 .dashboard-section__edit {

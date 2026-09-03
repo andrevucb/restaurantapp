@@ -29,6 +29,7 @@ public static class ProductEndpoints
              .Produces(StatusCodes.Status404NotFound);
 
         group.MapPost("/", CreateProduct)
+             .DisableAntiforgery()
              .WithName("CreateProduct")
              .WithDescription("Create a product")
              .Accepts<Product>("multipart/form-data")
@@ -36,6 +37,7 @@ public static class ProductEndpoints
              .Produces(StatusCodes.Status400BadRequest);
 
         group.MapPut("/{id}", UpdateProduct)
+             .DisableAntiforgery()
              .WithName("UpdateProduct")
              .WithDescription("Update a product")
              .Accepts<Product>("multipart/form-data")
