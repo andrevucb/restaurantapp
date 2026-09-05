@@ -249,6 +249,7 @@
 .menu-header,
 .dashboard-header,
 .group-editor-header {
+    position: relative;
     display: flex;
     justify-content: center;
     height: 72px;
@@ -260,6 +261,57 @@
 .dashboard-header__nav img,
 .group-editor-header__nav img {
     height: 56px;
+}
+
+.dashboard-header__account {
+    position: absolute;
+    top: 16px;
+    right: 24px;
+}
+
+.dashboard-header__user {
+    min-height: 40px;
+    padding: 0 12px;
+    color: #fff;
+    background: transparent;
+    border: 1px solid rgb(255 255 255 / 60%);
+    border-radius: 4px;
+    cursor: pointer;
+    font: inherit;
+}
+
+.dashboard-header__user:hover,
+.dashboard-header__user[aria-expanded="true"] {
+    color: #23282e;
+    background-color: goldenrod;
+    border-color: goldenrod;
+}
+
+.dashboard-header__menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 160px;
+    padding: 8px;
+    background-color: #fff;
+    border: 1px solid #e1e4e6;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgb(35 40 46 / 20%);
+}
+
+.dashboard-header__logout {
+    width: 100%;
+    padding: 8px;
+    color: #23282e;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+}
+
+.dashboard-header__logout:hover {
+    background-color: #f1f3f4;
 }
 
 .group-editor-container__title {

@@ -15,6 +15,18 @@ function isTokenValid(token) {
   }
 }
 
+function getTokenClaims(token) {
+  if (!token) return null
+
+  try {
+    const encodedPayload = token.split('.')[1]
+    const payload = encodedPayload.replace(/-/g, '+').replace(/_/g, '/')
+    return JSON.parse(atob(payload))
+  } catch {
+    return null
+  }
+}
+
 function getStoredToken() {
   const token = localStorage.getItem(tokenStorageKey)
 
@@ -26,6 +38,7 @@ function getStoredToken() {
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(getStoredToken)
+  const user = getTokenClaims(token)
 
   const value = useMemo(() => {
     function logout() {
@@ -63,8 +76,8 @@ export function AuthProvider({ children }) {
       return response
     }
 
-    return { token, isAuthenticated: Boolean(token), login, logout, authFetch }
-  }, [token])
+    return { token, user, isAuthenticated: Boolean(token), login, logout, authFetch }
+  }, [token, user])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
